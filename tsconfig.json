@@ -1,25 +1,22 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "resolvePackageJsonExports": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
+    "module": "commonjs",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2023",
+    "target": "ES2019",
+    "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
-  }
+    "incremental": false,
+    
+    // FIX deprecation warning
+    "ignoreDeprecations": "6.0",
+
+    // Nest default (ยังใช้ได้ ไม่ต้องลบ)
+    "baseUrl": "./"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
 }
