@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
@@ -15,7 +20,9 @@ export class AuthService {
   // ---------------- REGISTER ---------------- //
   async register(dto: RegisterDto) {
     const exists = await this.users.findByUsername(dto.username);
-    if (exists) throw new Error('Username already exists');
+    if (exists) {
+      throw new ConflictException('Username already exists');
+    }
 
     return this.users.createUser(dto);
   }
@@ -23,22 +30,27 @@ export class AuthService {
   // ---------------- LOGIN ---------------- //
   async login(dto: LoginDto) {
     const user = await this.users.findByUsername(dto.username);
-    if (!user) throw new Error('User not found');
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     const valid = await argon2.verify(user.password, dto.password);
-    if (!valid) throw new Error('Invalid password');
+    if (!valid) {
+      throw new UnauthorizedException('Invalid password');
+    }
 
     const accessToken = await this.jwt.signAsync(
       {
         sub: user.id,
         username: user.username,
       },
-      { expiresIn: '15m' }
+      { expiresIn: '15m' },
     );
 
     const refreshToken = await this.jwt.signAsync(
       { sub: user.id },
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     return {
@@ -51,10 +63,10 @@ export class AuthService {
     };
   }
 
-  // ---------------- REFRESH FROM COOKIE ---------------- //
+  // ---------------- REFRESH token ---------------- //
   async refreshFromCookie(refreshToken: string) {
     if (!refreshToken) {
-      throw new Error('No refresh token provided');
+      throw new UnauthorizedException('No refresh token provided');
     }
 
     let payload: any;
@@ -64,15 +76,12 @@ export class AuthService {
         secret: process.env.JWT_SECRET,
       });
     } catch (err) {
-      throw new Error('Invalid refresh token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const userId = payload.sub;
-
-    // create new access token
     const newAccessToken = await this.jwt.signAsync(
-      { sub: userId },
-      { expiresIn: '120m' }
+      { sub: payload.sub },
+      { expiresIn: '15m' },
     );
 
     return newAccessToken;
