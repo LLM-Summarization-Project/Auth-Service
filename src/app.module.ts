@@ -7,9 +7,12 @@ import { AuthModule } from './auth/auth.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,         // <--- THIS loads .env globally
-      envFilePath: '.env',    // <--- Force load .env from project root
+      isGlobal: true,
+      envFilePath: '.env',
     }),
-    PrismaModule, UsersModule, AuthModule],
+    PrismaModule,
+    UsersModule,
+    AuthModule,  // Just import AuthModule, not its internal components
+  ],
 })
-export class AppModule {}
+export class AppModule { }

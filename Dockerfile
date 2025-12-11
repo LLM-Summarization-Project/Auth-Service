@@ -18,15 +18,13 @@ RUN pnpm install --frozen-lockfile --prod=false
 COPY prisma ./prisma
 
 # Generate Prisma client
-RUN npx prisma generate
+RUN pnpm exec prisma generate
 
 # Copy all source code
 COPY . .
 
 # Build using TypeScript
 RUN pnpm run build
-RUN cp -r $(find node_modules -maxdepth 5 -name .prisma -type d -print -quit) /app/prisma-client
-
 
 # ============================
 # 2) Runner Stage
@@ -37,16 +35,19 @@ WORKDIR /app
 
 RUN npm install -g pnpm
 
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
 
 # Install ONLY production deps
 RUN pnpm install --frozen-lockfile --prod
 
+# Copy prisma directory and generated client from builder
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.pnpm ./node_modules/.pnpm
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
 # Copy build output
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma-client ./node_modules/.prisma
-# COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 EXPOSE 4000
 CMD ["node", "dist/main.js"]
