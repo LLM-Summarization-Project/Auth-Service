@@ -25,6 +25,7 @@ COPY . .
 
 # Build using TypeScript
 RUN pnpm run build
+RUN cp -r $(find node_modules -maxdepth 5 -name .prisma -type d -print -quit) /app/prisma-client
 
 
 # ============================
@@ -44,6 +45,8 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy build output
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma-client ./node_modules/.prisma
+# COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 EXPOSE 4000
 CMD ["node", "dist/main.js"]
