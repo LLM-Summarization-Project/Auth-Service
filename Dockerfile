@@ -25,6 +25,7 @@ COPY . .
 
 # Build using TypeScript
 RUN pnpm run build
+RUN ls -F node_modules
 
 # ============================
 # 2) Runner Stage
@@ -37,12 +38,15 @@ RUN npm install -g pnpm
 
 # Copy everything needed from builder
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
 
-# Prune dev dependencies but keep the generated client
-RUN pnpm prune --prod
+# Install prod deps only
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy generated client (vital for Prisma to work)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 4000
 CMD ["node", "dist/main.js"]
