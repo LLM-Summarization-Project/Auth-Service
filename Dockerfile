@@ -2,48 +2,35 @@
 # 1) Build Stage
 # ============================
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install npm deps (use npm for consistent node_modules layout)
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Copy package files first (layer caching)
-COPY package.json pnpm-lock.yaml ./
-
-# Install ALL deps (dev + prod)
-RUN pnpm install --frozen-lockfile --prod=false
-
-# Copy prisma schema
+# Copy prisma schema and generate client
 COPY prisma ./prisma
-
-# Generate Prisma client
 RUN npx prisma generate
 
-# Copy all source code
+# Copy source and build
 COPY . .
-
-# Build using TypeScript
-RUN pnpm run build
-
+RUN npm run build
 
 # ============================
 # 2) Runner Stage
 # ============================
 FROM node:20-alpine AS runner
-
 WORKDIR /app
 
-RUN npm install -g pnpm
+# Install only production deps in runner
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
 
-COPY package.json pnpm-lock.yaml ./
-
-# Install ONLY production deps
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy build output
+# Copy built app + prisma + prisma-client artifacts
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 4000
 CMD ["node", "dist/main.js"]
