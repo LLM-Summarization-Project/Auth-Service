@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import 'dotenv/config';
+// console.log('DATABASE_URL:', process.env.DATABASE_URL);
 
 // FIX: force CommonJS import
 const cookieParser = require('cookie-parser');
