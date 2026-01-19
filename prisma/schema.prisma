@@ -12,6 +12,7 @@ model User {
   username          String              @unique
   password          String
   createdAt         DateTime            @default(now())
+  role              UserRole            @default(USER)
   Summary           Summary[]
   UserOntologyTopic UserOntologyTopic[]
 }
@@ -46,6 +47,8 @@ model Summary {
   errorMessage        String?
   keyword             String?
   userId              Int
+  whisperTemp         Float?
+  ChatSession         ChatSession?
   User                User          @relation(fields: [userId], references: [id])
 
   @@index([status, startedAt])
@@ -86,10 +89,39 @@ model UserOntologyTopic {
   @@index([userId])
 }
 
+model ChatMessage {
+  id          Int         @id @default(autoincrement())
+  sessionId   Int
+  role        ChatRole
+  content     String
+  createdAt   DateTime    @default(now())
+  ChatSession ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model ChatSession {
+  id          Int           @id @default(autoincrement())
+  summaryId   String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime
+  ChatMessage ChatMessage[]
+  Summary     Summary       @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+}
+
 enum SummaryStatus {
   QUEUED
   RUNNING
   DONE
   ERROR
   CANCEL
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum UserRole {
+  ADMIN
+  USER
 }
