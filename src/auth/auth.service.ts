@@ -15,7 +15,7 @@ export class AuthService {
   constructor(
     private users: UsersService,
     private jwt: JwtService,
-  ) {}
+  ) { }
 
   // ---------------- REGISTER ---------------- //
   async register(dto: RegisterDto) {
@@ -40,16 +40,22 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
+    // Determine effective role (admin can login as user)
+    const effectiveRole = (user.role === 'ADMIN' && dto.loginAsUser)
+      ? 'USER'
+      : user.role;
+
     const accessToken = await this.jwt.signAsync(
       {
         sub: user.id,
         username: user.username,
+        role: effectiveRole,
       },
       { expiresIn: '15m' },
     );
 
     const refreshToken = await this.jwt.signAsync(
-      { sub: user.id },
+      { sub: user.id, role: effectiveRole },
       { expiresIn: '7d' },
     );
 
@@ -59,6 +65,8 @@ export class AuthService {
       user: {
         id: user.id,
         username: user.username,
+        role: effectiveRole,
+        isAdmin: user.role === 'ADMIN', // True role for UI logic
       },
     };
   }

@@ -16,7 +16,7 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  await app.listen(4000);
-  console.log('🚀 Server running at http://localhost:4000');
+  await app.listen(process.env.PORT || 4000);
+  console.log(`🚀 Server running at http://localhost:${process.env.PORT || 4000}`);
 }
 bootstrap();
