@@ -5,23 +5,29 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install pnpm globally
+RUN npm install -g pnpm
+
 # Copy package files first (layer caching)
-COPY package.json package-lock.json* ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install ALL deps (dev + prod)
-RUN npm ci
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Copy prisma schema
 COPY prisma ./prisma
 
 # Generate Prisma client
-RUN npx prisma generate
+RUN pnpm exec prisma generate
 
 # Copy all source code
 COPY . .
 
 # Build using TypeScript
-RUN npm run build
+RUN pnpm run build
+
+# Prune dev dependencies (keep prod deps and generated client)
+RUN pnpm prune --prod
 
 # ============================
 # 2) Runner Stage
@@ -33,7 +39,7 @@ WORKDIR /app
 # Copy everything needed from builder
 COPY --from=builder /app/package.json ./
 
-# Copy the entire node_modules from builder
+# Copy the entire pruned node_modules from builder
 # This includes the correctly generated Prisma client and all prod dependencies
 COPY --from=builder /app/node_modules ./node_modules
 
