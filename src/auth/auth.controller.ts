@@ -12,7 +12,15 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import type { Response, Request } from 'express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiCookieAuth,
+} from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) { }
@@ -45,11 +53,17 @@ export class AuthController {
   }
 
   @Post('register')
+  @ApiOperation({ summary: 'Register a new user', description: 'Creates a new user account with username and password' })
+  @ApiResponse({ status: 201, description: 'User successfully registered' })
+  @ApiResponse({ status: 400, description: 'Invalid input or username already exists' })
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto);
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Login user', description: 'Authenticates user and sets HTTP-only cookies with tokens' })
+  @ApiResponse({ status: 200, description: 'Login successful, cookies set' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -74,6 +88,10 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token', description: 'Uses refresh token from cookies to generate new access token' })
+  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  @ApiCookieAuth()
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refresh_token'];
 
@@ -90,6 +108,8 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Logout user', description: 'Clears authentication cookies' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
@@ -98,6 +118,11 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
+  @ApiOperation({ summary: 'Get current user', description: 'Returns the authenticated user\'s profile with color' })
+  @ApiResponse({ status: 200, description: 'Current user profile returned' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiCookieAuth()
   me(@Req() req: Request) {
     const user = req.user as { id: number; username: string; role: string };
     return {
