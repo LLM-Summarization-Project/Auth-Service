@@ -51,7 +51,8 @@ export class AuthService {
         username: user.username,
         role: effectiveRole,
       },
-      { expiresIn: '15m' },
+      // { expiresIn: '15m' },
+      { expiresIn: '7d' },
     );
 
     const refreshToken = await this.jwt.signAsync(
@@ -89,7 +90,7 @@ export class AuthService {
 
     const newAccessToken = await this.jwt.signAsync(
       { sub: payload.sub },
-      { expiresIn: '15m' },
+      { expiresIn: '7d' },
     );
 
     return newAccessToken;
